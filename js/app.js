@@ -90,6 +90,15 @@ const App = {
     await StudentDashboardComponent.open(studentId);
   },
 
+  openTeacherPortal() {
+    this.showView("teacher");
+    TeacherDashboardComponent.render();
+  },
+
+  exitTeacherMode() {
+    this.showView("students");
+  },
+
   checkDateRollover() {
     const currentToday = DateUtils.getTodayDateString();
     if (AttendanceViewComponent.todayDateStr !== currentToday) {

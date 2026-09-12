@@ -1,20 +1,28 @@
 /**
  * MAKTAB MANAGEMENT SYSTEM - TEACHER DASHBOARD COMPONENT
- * Provides secure authentication gate and streamlined student CRUD management.
+ * Hidden teacher portal unlocked exclusively via secret code in search bar.
+ * Provides:
+ * 1. Today's Attendance marking
+ * 2. Previous day's Sabak recording
+ * 3. Student Management (Add, Edit, Delete)
  */
 
 const TeacherDashboardComponent = {
   students: [],
+  attendanceMap: {},
+  sabakMap: {},
+  currentTeacherTab: "attendance", // 'attendance' | 'sabak' | 'students'
+  todayDateStr: null,
+  yesterdayDateStr: null,
+
   selectedStudentForEdit: null,
   selectedStudentForDelete: null,
-  currentTeacherTab: "students", // 'students' | 'attendance' | 'sabak'
 
   init() {
     this.bindEvents();
   },
 
   bindEvents() {
-    // Listen for auth changes
     window.addEventListener("maktab:auth_changed", () => {
       this.render();
     });
@@ -24,99 +32,239 @@ const TeacherDashboardComponent = {
     const container = document.getElementById("teacher-dashboard-content");
     if (!container) return;
 
-    const isAuthenticated = AuthModule.isTeacherAuthenticated();
-
-    if (!isAuthenticated) {
-      this.renderAuthGate(container);
-    } else {
-      await this.renderTeacherPanel(container);
-    }
-  },
-
-  renderAuthGate(container) {
-    container.innerHTML = `
-      <div class="teacher-auth-card">
-        <div class="lock-badge">
-          <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-          </svg>
-        </div>
-        <div class="teacher-auth-title">Teacher Access</div>
-        <p class="teacher-auth-desc">Enter your private access code to manage students, attendance, and Sabak.</p>
-        
-        <form onsubmit="TeacherDashboardComponent.handleAuthSubmit(event)">
-          <input type="password" 
-                 id="teacher-passcode-input" 
-                 class="pin-input-box" 
-                 placeholder="••••••" 
-                 autocomplete="off" 
-                 required />
-          <button type="submit" id="teacher-login-btn" class="btn-primary">
-            Authenticate
+    if (!AuthModule.isTeacherAuthenticated()) {
+      container.innerHTML = `
+        <div class="teacher-auth-card" style="margin-top: 30px;">
+          <div class="lock-badge">
+            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+          </div>
+          <div class="teacher-auth-title">Teacher Portal Protected</div>
+          <p class="teacher-auth-desc">Type your private access code into the main search bar to access the Teacher Portal.</p>
+          <button class="btn-primary" style="margin-top: 14px;" onclick="App.showView('students')">
+            Back to Student List
           </button>
-        </form>
-      </div>
-    `;
-  },
-
-  async handleAuthSubmit(e) {
-    e.preventDefault();
-    const input = document.getElementById("teacher-passcode-input");
-    const btn = document.getElementById("teacher-login-btn");
-    if (!input || !btn) return;
-
-    const code = input.value;
-    btn.disabled = true;
-    btn.textContent = "Verifying...";
-
-    const res = await AuthModule.verifyTeacherAccess(code);
-    btn.disabled = false;
-    btn.textContent = "Authenticate";
-
-    if (res.success) {
-      App.showToast("Teacher access granted.", "success");
-      await this.render();
-    } else {
-      App.showToast(res.error || "Authentication failed.", "error");
-      input.value = "";
-      input.focus();
+        </div>
+      `;
+      return;
     }
-  },
 
-  async renderTeacherPanel(container) {
     container.innerHTML = `
       <div class="state-container">
         <div class="spinner"></div>
-        <p class="state-text">Loading management console...</p>
+        <p class="state-text">Loading teacher console...</p>
       </div>
     `;
 
-    try {
-      this.students = await DB.getStudents();
-    } catch (err) {
-      console.error("Error loading students for teacher:", err);
-      this.students = [];
-    }
+    this.todayDateStr = DateUtils.getTodayDateString();
+    this.yesterdayDateStr = DateUtils.getYesterdayDateString();
 
-    const todayDisplay = DateUtils.formatDisplayDate(DateUtils.getTodayDateString());
-    const yesterdayDisplay = DateUtils.formatDisplayDate(DateUtils.getYesterdayDateString());
+    try {
+      const [students, attendanceMap, sabakMap] = await Promise.all([
+        DB.getStudents(),
+        DB.getAttendanceMapForDate(this.todayDateStr),
+        DB.getSabakMapForDate(this.yesterdayDateStr)
+      ]);
+
+      this.students = students;
+      this.attendanceMap = attendanceMap;
+      this.sabakMap = sabakMap;
+
+      this.renderPortal(container);
+    } catch (err) {
+      console.error("Error loading teacher portal data:", err);
+      container.innerHTML = `
+        <div class="state-container">
+          <p class="state-text">Unable to load teacher records.</p>
+          <button class="btn-secondary" style="margin-top: 12px;" onclick="TeacherDashboardComponent.render()">Retry</button>
+        </div>
+      `;
+    }
+  },
+
+  switchTab(tabName) {
+    this.currentTeacherTab = tabName;
+    const container = document.getElementById("teacher-dashboard-content");
+    if (container) {
+      this.renderPortal(container);
+    }
+  },
+
+  renderPortal(container) {
+    const todayDisplay = DateUtils.formatDisplayDate(this.todayDateStr);
+    const yesterdayDisplay = DateUtils.formatDisplayDate(this.yesterdayDateStr);
 
     container.innerHTML = `
-      <!-- Teacher Header -->
+      <!-- Teacher Top Header -->
       <div class="teacher-panel-header">
         <div>
-          <h2 class="section-title">Teacher Dashboard</h2>
-          <span style="font-size: 12px; color: var(--text-muted);">Authenticated Session</span>
+          <h2 class="section-title" style="display:flex; align-items:center; gap:8px;">
+            <span>Teacher Portal</span>
+            <span style="font-size:11px; padding:2px 8px; border-radius:999px; background:var(--color-primary-light); color:var(--color-primary); font-weight:600;">Active</span>
+          </h2>
+          <span style="font-size: 12px; color: var(--text-muted);">Manage Attendance, Sabak & Students</span>
         </div>
-        <button class="btn-secondary" style="height:34px; font-size:12px;" onclick="AuthModule.logoutTeacher()">
-          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-          </svg>
-          Logout
+        <button class="btn-secondary" style="height:34px; font-size:12px;" onclick="App.exitTeacherMode()">
+          Exit Portal
         </button>
       </div>
 
-      <!-- Quick Action Bar -->
+      <!-- Segmented Teacher Navigation Tabs -->
+      <div style="display:flex; background:var(--bg-input); padding:4px; border-radius:var(--radius-md); margin-bottom:16px; gap:4px;">
+        <button class="btn-tab ${this.currentTeacherTab === 'attendance' ? 'active' : ''}" 
+                onclick="TeacherDashboardComponent.switchTab('attendance')">
+          Attendance
+        </button>
+        <button class="btn-tab ${this.currentTeacherTab === 'sabak' ? 'active' : ''}" 
+                onclick="TeacherDashboardComponent.switchTab('sabak')">
+          Sabak
+        </button>
+        <button class="btn-tab ${this.currentTeacherTab === 'students' ? 'active' : ''}" 
+                onclick="TeacherDashboardComponent.switchTab('students')">
+          Students (${this.students.length})
+        </button>
+      </div>
+
+      <!-- Tab Content Area -->
+      <div id="teacher-tab-content">
+        ${this.renderTabContent(todayDisplay, yesterdayDisplay)}
+      </div>
+    `;
+  },
+
+  renderTabContent(todayDisplay, yesterdayDisplay) {
+    if (this.currentTeacherTab === "attendance") {
+      return this.renderAttendanceTab(todayDisplay);
+    } else if (this.currentTeacherTab === "sabak") {
+      return this.renderSabakTab(yesterdayDisplay);
+    } else {
+      return this.renderStudentsTab();
+    }
+  },
+
+  // --------------------------------------------------------------------------
+  // 1. ATTENDANCE TAB
+  // --------------------------------------------------------------------------
+  renderAttendanceTab(todayDisplay) {
+    return `
+      <div class="today-banner">
+        <span class="today-banner-title">Today's Attendance</span>
+        <span class="today-banner-date">${todayDisplay}</span>
+      </div>
+
+      ${this.students.length === 0 ? `
+        <div class="state-container">
+          <p class="state-text">No students added yet.</p>
+          <button class="btn-primary" style="margin-top:12px; width:auto; padding:0 18px;" onclick="TeacherDashboardComponent.openAddModal()">+ Add Student</button>
+        </div>
+      ` : `
+        <div class="attendance-list">
+          ${this.students.map(s => {
+            const status = this.attendanceMap[s.id];
+            const isPresent = status === "present";
+            const isAbsent = status === "absent";
+            return `
+              <div class="attendance-item">
+                <div class="att-student-meta">
+                  <div class="att-student-name">${this.escapeHtml(s.name)}</div>
+                  <div style="font-size:12px; color:var(--text-muted);">Father: ${this.escapeHtml(s.father_name)}</div>
+                </div>
+                <div class="att-toggle-group">
+                  <button class="att-btn present ${isPresent ? 'active' : ''}" 
+                          onclick="TeacherDashboardComponent.markAttendance('${s.id}', 'present')">
+                    Present
+                  </button>
+                  <button class="att-btn absent ${isAbsent ? 'active' : ''}" 
+                          onclick="TeacherDashboardComponent.markAttendance('${s.id}', 'absent')">
+                    Absent
+                  </button>
+                </div>
+              </div>
+            `;
+          }).join("")}
+        </div>
+      `}
+    `;
+  },
+
+  async markAttendance(studentId, status) {
+    try {
+      this.attendanceMap[studentId] = status;
+      this.renderPortal(document.getElementById("teacher-dashboard-content"));
+
+      await DB.markAttendance(studentId, this.todayDateStr, status);
+      App.showToast("Attendance saved.", "success");
+    } catch (err) {
+      console.error("Error marking attendance:", err);
+      App.showToast("Attendance could not be saved.", "error");
+    }
+  },
+
+  // --------------------------------------------------------------------------
+  // 2. SABAK TAB
+  // --------------------------------------------------------------------------
+  renderSabakTab(yesterdayDisplay) {
+    return `
+      <div class="today-banner" style="background:#fef3c7; border-color:#fde68a;">
+        <span class="today-banner-title" style="color:#92400e;">Yesterday's Sabak</span>
+        <span class="today-banner-date" style="color:#b45309;">${yesterdayDisplay}</span>
+      </div>
+
+      ${this.students.length === 0 ? `
+        <div class="state-container">
+          <p class="state-text">No students added yet.</p>
+        </div>
+      ` : `
+        <div class="attendance-list">
+          ${this.students.map(s => {
+            const completed = this.sabakMap[s.id]; // true | false | undefined
+            const isYes = completed === true;
+            const isNo = completed === false;
+            return `
+              <div class="attendance-item">
+                <div class="att-student-meta">
+                  <div class="att-student-name">${this.escapeHtml(s.name)}</div>
+                  <div style="font-size:12px; color:var(--text-muted);">Father: ${this.escapeHtml(s.father_name)}</div>
+                </div>
+                <div class="att-toggle-group">
+                  <button class="att-btn present ${isYes ? 'active' : ''}" 
+                          style="${isYes ? 'background:var(--color-primary); border-color:var(--color-primary); color:#ffffff;' : ''}"
+                          onclick="TeacherDashboardComponent.recordSabak('${s.id}', true)">
+                    ✓ Yes
+                  </button>
+                  <button class="att-btn absent ${isNo ? 'active' : ''}" 
+                          style="${isNo ? 'background:#475569; border-color:#475569; color:#ffffff;' : ''}"
+                          onclick="TeacherDashboardComponent.recordSabak('${s.id}', false)">
+                    ✕ No
+                  </button>
+                </div>
+              </div>
+            `;
+          }).join("")}
+        </div>
+      `}
+    `;
+  },
+
+  async recordSabak(studentId, completed) {
+    try {
+      this.sabakMap[studentId] = completed;
+      this.renderPortal(document.getElementById("teacher-dashboard-content"));
+
+      await DB.saveSabak(studentId, this.yesterdayDateStr, completed);
+      App.showToast("Sabak record saved.", "success");
+    } catch (err) {
+      console.error("Error saving Sabak:", err);
+      App.showToast("Sabak could not be saved.", "error");
+    }
+  },
+
+  // --------------------------------------------------------------------------
+  // 3. STUDENTS TAB
+  // --------------------------------------------------------------------------
+  renderStudentsTab() {
+    return `
       <div class="teacher-actions-bar">
         <button class="btn-primary" style="flex:1;" onclick="TeacherDashboardComponent.openAddModal()">
           <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -126,12 +274,7 @@ const TeacherDashboardComponent = {
         </button>
       </div>
 
-      <!-- Managed Student List -->
-      <div class="section-header" style="margin-top:16px;">
-        <span style="font-weight:700; font-size:15px;">All Students (${this.students.length})</span>
-      </div>
-
-      <div class="student-list" style="margin-top: 8px;">
+      <div class="student-list" style="margin-top: 12px;">
         ${this.students.length === 0 ? `
           <div class="state-container">
             <p class="state-text">No students added yet.</p>
@@ -161,7 +304,7 @@ const TeacherDashboardComponent = {
   },
 
   // --------------------------------------------------------------------------
-  // Student Modals: Add, Edit, Delete
+  // Modals: Add, Edit, Delete
   // --------------------------------------------------------------------------
   openAddModal() {
     const modal = document.getElementById("student-form-modal");
@@ -215,11 +358,9 @@ const TeacherDashboardComponent = {
 
     try {
       if (id) {
-        // Edit existing
         await DB.updateStudent(id, { name, father_name, mobile });
         App.showToast("Student updated successfully.", "success");
       } else {
-        // Add new
         await DB.createStudent({ name, father_name, mobile });
         App.showToast("Student added successfully.", "success");
       }

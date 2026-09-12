@@ -247,7 +247,7 @@ body {
 .main-content {
   flex: 1;
   padding: 16px;
-  padding-bottom: 80px; /* Space for bottom nav */
+  padding-bottom: 24px;
   overflow-y: auto;
 }
 
@@ -718,6 +718,25 @@ body {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.btn-tab {
+  flex: 1;
+  height: 36px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-tab.active {
+  background: #ffffff;
+  color: var(--color-primary-dark);
+  box-shadow: var(--shadow-sm);
 }
 
 .btn-danger-outline {

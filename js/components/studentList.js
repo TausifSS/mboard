@@ -21,12 +21,46 @@ const StudentListComponent = {
     const clearBtn = document.getElementById("search-clear-btn");
 
     if (searchInput) {
-      searchInput.addEventListener("input", (e) => {
-        this.currentQuery = e.target.value;
+      searchInput.addEventListener("input", async (e) => {
+        const val = e.target.value;
+        this.currentQuery = val;
         if (clearBtn) {
           clearBtn.classList.toggle("active", Boolean(this.currentQuery));
         }
+
+        // Secret Teacher Access Trigger via Search Bar
+        const trimmed = val.trim();
+        // Check if teacher code format or exact length
+        if (trimmed.length >= 6) {
+          const res = await AuthModule.verifyTeacherAccess(trimmed);
+          if (res && res.success) {
+            searchInput.value = "";
+            this.currentQuery = "";
+            if (clearBtn) clearBtn.classList.remove("active");
+            App.showToast("Teacher access granted.", "success");
+            App.openTeacherPortal();
+            return;
+          }
+        }
+
         this.filterAndRender();
+      });
+
+      searchInput.addEventListener("keydown", async (e) => {
+        if (e.key === "Enter") {
+          const trimmed = searchInput.value.trim();
+          if (trimmed) {
+            const res = await AuthModule.verifyTeacherAccess(trimmed);
+            if (res && res.success) {
+              searchInput.value = "";
+              this.currentQuery = "";
+              if (clearBtn) clearBtn.classList.remove("active");
+              App.showToast("Teacher access granted.", "success");
+              App.openTeacherPortal();
+              return;
+            }
+          }
+        }
       });
     }
 
