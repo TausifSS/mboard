@@ -91,13 +91,16 @@ const TeacherDashboardComponent = {
     `;
 
     this.todayDateStr = DateUtils.getTodayDateString();
-    this.yesterdayDateStr = DateUtils.getYesterdayDateString();
+    const sabakInfo = DateUtils.getActiveSabakInfo();
+    this.sabakDateStr = sabakInfo.targetDate;
+    this.sabakLabel = sabakInfo.label;
+    this.sabakDisplayDate = sabakInfo.displayDate;
 
     try {
       const [students, attendanceMap, sabakMap] = await Promise.all([
         DB.getStudents(),
         DB.getAttendanceMapForDate(this.todayDateStr),
-        DB.getSabakMapForDate(this.yesterdayDateStr)
+        DB.getSabakMapForDate(this.sabakDateStr)
       ]);
 
       this.students = students;
@@ -133,7 +136,7 @@ const TeacherDashboardComponent = {
 
   renderPortal(container) {
     const todayDisplay = DateUtils.formatDisplayDate(this.todayDateStr);
-    const yesterdayDisplay = DateUtils.formatDisplayDate(this.yesterdayDateStr);
+    const sabakDisplay = this.sabakDisplayDate;
 
     const totalCount = this.students.length;
     const boysCount = this.students.filter(s => s.gender === "boy").length;
@@ -188,17 +191,17 @@ const TeacherDashboardComponent = {
 
       <!-- Active Tab Content -->
       <div id="teacher-tab-content">
-        ${this.renderTabContent(todayDisplay, yesterdayDisplay)}
+        ${this.renderTabContent(todayDisplay, sabakDisplay)}
       </div>
     `;
   },
 
-  renderTabContent(todayDisplay, yesterdayDisplay) {
+  renderTabContent(todayDisplay, sabakDisplay) {
     const list = this.getFilteredStudents();
     if (this.currentTeacherTab === "attendance") {
       return this.renderAttendanceTab(todayDisplay, list);
     } else if (this.currentTeacherTab === "sabak") {
-      return this.renderSabakTab(yesterdayDisplay, list);
+      return this.renderSabakTab(sabakDisplay, list);
     } else {
       return this.renderStudentsTab(list);
     }
@@ -341,7 +344,7 @@ const TeacherDashboardComponent = {
   },
 
   // 2. Sabak Tab
-  renderSabakTab(yesterdayDisplay, list) {
+  renderSabakTab(sabakDisplay, list) {
     const boys = list.filter(s => s.gender === "boy");
     const girls = list.filter(s => s.gender === "girl");
 
@@ -388,8 +391,8 @@ const TeacherDashboardComponent = {
 
     return `
       <div class="today-banner" style="background:#fef3c7; border-color:#fde68a;">
-        <span class="today-banner-title" style="color:#92400e;">Yesterday's Sabak</span>
-        <span class="today-banner-date" style="color:#b45309;">${yesterdayDisplay}</span>
+        <span class="today-banner-title" style="color:#92400e;">${this.sabakLabel}</span>
+        <span class="today-banner-date" style="color:#b45309;">${sabakDisplay}</span>
       </div>
       ${itemsHtml}
     `;
@@ -400,7 +403,7 @@ const TeacherDashboardComponent = {
       this.sabakMap[studentId] = completed;
       this.renderPortal(document.getElementById("teacher-dashboard-content"));
 
-      await DB.saveSabak(studentId, this.yesterdayDateStr, completed);
+      await DB.saveSabak(studentId, this.sabakDateStr, completed);
       App.showToast("Sabak record saved.", "success");
     } catch (err) {
       console.error("Error saving Sabak:", err);
@@ -524,7 +527,12 @@ const TeacherDashboardComponent = {
     if (mobileInput) mobileInput.value = "";
     if (genderSelect) genderSelect.value = this.currentTeacherGenderFilter === "girl" ? "girl" : "boy";
 
-    if (modal) modal.classList.add("active");
+    if (modal) {
+      modal.classList.add("active");
+      if (window.App && typeof window.App.pushModalHistory === "function") {
+        window.App.pushModalHistory("student-form");
+      }
+    }
   },
 
   async openEditModal(studentId) {
@@ -547,7 +555,12 @@ const TeacherDashboardComponent = {
     if (mobileInput) mobileInput.value = student.mobile || "";
     if (genderSelect) genderSelect.value = student.gender || "boy";
 
-    if (modal) modal.classList.add("active");
+    if (modal) {
+      modal.classList.add("active");
+      if (window.App && typeof window.App.pushModalHistory === "function") {
+        window.App.pushModalHistory("student-form");
+      }
+    }
   },
 
   closeStudentModal() {
@@ -585,7 +598,12 @@ const TeacherDashboardComponent = {
     const modal = document.getElementById("delete-student-modal");
     const nameSpan = document.getElementById("delete-student-name");
     if (nameSpan) nameSpan.textContent = studentName;
-    if (modal) modal.classList.add("active");
+    if (modal) {
+      modal.classList.add("active");
+      if (window.App && typeof window.App.pushModalHistory === "function") {
+        window.App.pushModalHistory("delete-student");
+      }
+    }
   },
 
   closeDeleteModal() {

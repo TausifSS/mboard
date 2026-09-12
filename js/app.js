@@ -6,6 +6,8 @@
 const App = {
   currentView: "students", // 'students' | 'attendance' | 'teacher' | 'student-detail'
   activeStudentId: null,
+  lastBackPressTime: 0,
+  lastKnownSabakCutoff: null,
 
   async init() {
     console.log("Initializing Maktab Management System...");
@@ -13,6 +15,10 @@ const App = {
     // Initialize data layer
     DB.initLocalStore();
     SupabaseClientModule.init();
+
+    // Initial 6 PM Sabak cleanup
+    await DB.cleanupOldSabak();
+    this.lastKnownSabakCutoff = DateUtils.getActiveSabakInfo().targetDate;
 
     // Initialize PWA Installer & Service Worker
     if (window.PWAInstaller) {
@@ -24,13 +30,18 @@ const App = {
     await AttendanceViewComponent.init();
     TeacherDashboardComponent.init();
 
-    // Default view
-    this.showView("students");
+    // Bind bottom nav and history popstate for Android/iOS PWA back button
+    this.bindNavigation();
+    this.bindHistoryAndBack();
 
-    // Check midnight rollover periodically (every 60 seconds)
+    // Set initial history state
+    history.replaceState({ view: "students" }, "", "#students");
+    this.showView("students", false);
+
+    // Periodic check (every 30 seconds) for midnight and 6:00 PM rollover
     setInterval(() => {
       this.checkDateRollover();
-    }, 60000);
+    }, 30000);
   },
 
   bindNavigation() {
@@ -39,14 +50,73 @@ const App = {
       btn.addEventListener("click", () => {
         const view = btn.getAttribute("data-view");
         if (view) {
-          this.showView(view);
+          this.showView(view, true);
         }
       });
     });
   },
 
-  showView(viewName) {
+  /**
+   * Manages hardware & swipe back navigation for PWA.
+   * Prevents being kicked out of the app when hitting back inside profiles or modals!
+   */
+  bindHistoryAndBack() {
+    window.addEventListener("popstate", (e) => {
+      // 1. If any modal is active, close the modal first
+      const activeModal = document.querySelector(".modal-overlay.active");
+      if (activeModal) {
+        activeModal.classList.remove("active");
+        return;
+      }
+      const iosModal = document.getElementById("ios-install-modal");
+      if (iosModal && iosModal.classList.contains("active")) {
+        iosModal.classList.remove("active");
+        return;
+      }
+
+      // 2. If inside Student Profile or Teacher Portal, navigate back to Students register
+      if (this.currentView === "student-detail" || this.currentView === "teacher") {
+        if (this.currentView === "teacher") {
+          AuthModule.logoutTeacher();
+        }
+        this.showView("students", false);
+        return;
+      }
+
+      // 3. If on Attendance screen, back brings to student register
+      if (this.currentView === "attendance") {
+        this.showView("students", false);
+        return;
+      }
+
+      // 4. If already on students list, prevent immediate accidental exit on PWA
+      const now = Date.now();
+      if (now - this.lastBackPressTime > 2000) {
+        this.lastBackPressTime = now;
+        history.pushState({ view: "students" }, "", "#students");
+        this.showToast("Press back again to exit", "info");
+      }
+    });
+  },
+
+  pushModalHistory(modalName) {
+    history.pushState({ modal: modalName }, "", "#" + modalName);
+  },
+
+  goBack() {
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      this.showView("students", false);
+    }
+  },
+
+  showView(viewName, pushHistory = true) {
     this.currentView = viewName;
+
+    if (pushHistory) {
+      history.pushState({ view: viewName }, "", "#" + viewName);
+    }
 
     // Toggle View Sections
     const views = {
@@ -88,28 +158,45 @@ const App = {
 
   async openStudentDashboard(studentId) {
     this.activeStudentId = studentId;
-    this.showView("student-detail");
+    this.showView("student-detail", true);
     await StudentDashboardComponent.open(studentId);
   },
 
   openTeacherPortal() {
-    this.showView("teacher");
+    this.showView("teacher", true);
     TeacherDashboardComponent.render();
   },
 
   exitTeacherMode() {
     AuthModule.logoutTeacher();
-    this.showView("students");
+    this.showView("students", false);
     this.showToast("Teacher session ended.", "info");
   },
 
-  checkDateRollover() {
+  async checkDateRollover() {
     const currentToday = DateUtils.getTodayDateString();
+    const activeSabakInfo = DateUtils.getActiveSabakInfo();
+
+    // 1. Day Rollover for Attendance
     if (AttendanceViewComponent.todayDateStr !== currentToday) {
-      console.log("New day detected. Advancing active attendance screen to:", currentToday);
+      console.log("New calendar day detected:", currentToday);
       AttendanceViewComponent.loadAttendance();
       if (this.currentView === "student-detail" && this.activeStudentId) {
         StudentDashboardComponent.open(this.activeStudentId);
+      }
+    }
+
+    // 2. Evening 6:00 PM (18:00) Sabak Rollover / Cleanup
+    if (this.lastKnownSabakCutoff !== activeSabakInfo.targetDate) {
+      console.log("6:00 PM Sabak Rollover triggered. Purging previous sabak...");
+      this.lastKnownSabakCutoff = activeSabakInfo.targetDate;
+      await DB.cleanupOldSabak();
+
+      // Refresh currently active screen
+      if (this.currentView === "student-detail" && this.activeStudentId) {
+        StudentDashboardComponent.open(this.activeStudentId);
+      } else if (this.currentView === "teacher") {
+        TeacherDashboardComponent.render();
       }
     }
   },

@@ -36,6 +36,26 @@ const DateUtils = {
   },
 
   /**
+   * Returns active Sabak configuration based on the 6:00 PM (18:00) rule:
+   * - Before 6:00 PM: Focuses on Yesterday's Sabak.
+   * - At / After 6:00 PM (18:00): Yesterday's Sabak disappears / expires,
+   *   and the screen transitions fresh to Today's Sabak.
+   */
+  getActiveSabakInfo() {
+    const now = new Date();
+    const hour = now.getHours();
+    const isAfter6PM = hour >= 18;
+    const targetDate = isAfter6PM ? this.getTodayDateString() : this.getYesterdayDateString();
+    const label = isAfter6PM ? "Today's Sabak (Evening)" : "Yesterday's Sabak";
+    return {
+      isAfter6PM,
+      targetDate,
+      label,
+      displayDate: this.formatDisplayDate(targetDate)
+    };
+  },
+
+  /**
    * Formats a YYYY-MM-DD string into a friendly, readable format.
    * e.g., "2026-09-13" -> "13 September" or "13 September 2026"
    */

@@ -17,10 +17,50 @@ const PWAInstaller = {
     const userAgent = window.navigator.userAgent.toLowerCase();
     this.isIos = /iphone|ipad|ipod/.test(userAgent);
 
-    // Register Service Worker
+    // Check version and clear old cache if version updated
+    const CURRENT_VERSION = "2.1";
+    if (localStorage.getItem("maktab_app_version") !== CURRENT_VERSION) {
+      localStorage.setItem("maktab_app_version", CURRENT_VERSION);
+      if ("caches" in window) {
+        caches.keys().then((names) => {
+          names.forEach((name) => {
+            if (name !== "maktab-app-cache-v2.1") {
+              caches.delete(name);
+            }
+          });
+        });
+      }
+    }
+
+    // Register Service Worker with active update checking
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js").catch(err => {
+      navigator.serviceWorker.register("./sw.js").then((reg) => {
+        // Immediately check for updates from server
+        reg.update().catch(() => {});
+
+        // Listen for new worker installed
+        reg.addEventListener("updatefound", () => {
+          const newWorker = reg.installing;
+          if (newWorker) {
+            newWorker.addEventListener("statechange", () => {
+              if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+                console.log("New Maktab version available. Refreshing to apply...");
+                window.location.reload();
+              }
+            });
+          }
+        });
+      }).catch(err => {
         console.warn("ServiceWorker registration failed:", err);
+      });
+
+      // Reload when controller changes
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (!refreshing) {
+          refreshing = true;
+          window.location.reload();
+        }
       });
     }
 

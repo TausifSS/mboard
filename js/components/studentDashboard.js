@@ -34,8 +34,12 @@ const StudentDashboardComponent = {
         return;
       }
 
-      // Calculate Yesterday's date for daily Sabak logic
-      this.yesterdayDateStr = DateUtils.getYesterdayDateString();
+      // Calculate Active Sabak date based on 6:00 PM rollover
+      const sabakInfo = DateUtils.getActiveSabakInfo();
+      this.sabakDateStr = sabakInfo.targetDate;
+      this.sabakLabel = sabakInfo.label;
+      this.sabakDisplayDate = sabakInfo.displayDate;
+      this.isAfter6PM = sabakInfo.isAfter6PM;
 
       // Load Monthly Attendance for current month
       const now = new Date();
@@ -45,8 +49,8 @@ const StudentDashboardComponent = {
         now.getMonth() + 1
       );
 
-      // Load Yesterday's Sabak record
-      this.sabakRecord = await DB.getStudentSabakForDate(studentId, this.yesterdayDateStr);
+      // Load Active Sabak record (yesterday before 6pm, today after 6pm)
+      this.sabakRecord = await DB.getStudentSabakForDate(studentId, this.sabakDateStr);
 
       this.render();
     } catch (err) {
@@ -65,7 +69,6 @@ const StudentDashboardComponent = {
     if (!container || !this.currentStudent) return;
 
     const s = this.currentStudent;
-    const yesterdayDisplay = DateUtils.formatDisplayDate(this.yesterdayDateStr);
     const isTeacher = AuthModule.isTeacherAuthenticated();
 
     // Sabak active state
@@ -76,7 +79,7 @@ const StudentDashboardComponent = {
     container.innerHTML = `
       <!-- Top Navigation -->
       <div class="dashboard-top-bar">
-        <button class="back-btn" onclick="App.showView('students')" title="Back">
+        <button class="back-btn" onclick="App.goBack()" title="Back">
           <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
           </svg>
@@ -125,7 +128,7 @@ const StudentDashboardComponent = {
       <!-- Sabak Section (100% Read-Only for Public Interface) -->
       <div class="dash-card">
         <div class="dash-card-title">Sabak</div>
-        <div class="sabak-date-label">${yesterdayDisplay} — Sabak</div>
+        <div class="sabak-date-label">${this.sabakLabel} · ${this.sabakDisplayDate}</div>
         
         <div class="sabak-status-read-only">
           ${hasSabak ? `
@@ -135,7 +138,9 @@ const StudentDashboardComponent = {
               </span>
             </div>
           ` : `
-            <p class="state-text" style="font-size:13px; text-align:left;">No Sabak record found for yesterday.</p>
+            <p class="state-text" style="font-size:13px; text-align:left;">
+              ${this.isAfter6PM ? "Not recorded yet for today's evening session." : "No Sabak record found for yesterday."}
+            </p>
           `}
         </div>
       </div>

@@ -74,9 +74,9 @@ const GIRL_NAME_SET = new Set([
 
 const DB = {
   STORAGE_KEYS: {
-    STUDENTS: "maktab_db_students_v3",
-    ATTENDANCE: "maktab_db_attendance_v3",
-    SABAK: "maktab_db_sabak_v3"
+    STUDENTS: "maktab_db_students_v4",
+    ATTENDANCE: "maktab_db_attendance_v4",
+    SABAK: "maktab_db_sabak_v4"
   },
 
   initLocalStore() {
@@ -98,7 +98,7 @@ const DB = {
     const supabase = SupabaseClientModule.getClient();
     if (supabase) {
       try {
-        let query = supabase.from("students").select("id, name, father_name, mobile").order("name");
+        let query = supabase.from("students").select("id, name, father_name, mobile, gender").order("name");
 
         if (searchQuery && searchQuery.trim()) {
           const q = searchQuery.trim();
@@ -108,7 +108,7 @@ const DB = {
         const { data, error } = await query;
         if (!error && data && data.length > 0) {
           data.forEach(s => {
-            s.gender = GIRL_NAME_SET.has(s.name) ? "girl" : "boy";
+            s.gender = GIRL_NAME_SET.has(s.name) ? "girl" : (s.gender === "girl" ? "girl" : "boy");
           });
 
           if (genderFilter && genderFilter !== "all") {
@@ -444,6 +444,35 @@ const DB = {
     }
     localStorage.setItem(this.STORAGE_KEYS.SABAK, JSON.stringify(list));
     return { student_id: studentId, sabak_date: dateStr, completed };
+  },
+
+  /**
+   * Deletes expired Sabak records.
+   * Rule: Kal ka sabak aaj gayab hoga jaise hi evening 6 PM (18:00) honge!
+   * - Before 6 PM: Cutoff is yesterday's date (keeps yesterday's Sabak).
+   * - At/After 6 PM: Kal ka sabak gayab! Cutoff is today's date (purges yesterday's records).
+   */
+  async cleanupOldSabak() {
+    const sabakInfo = DateUtils.getActiveSabakInfo();
+    const cutoffDate = sabakInfo.targetDate;
+
+    // 1. Clean localStorage
+    try {
+      this.initLocalStore();
+      const list = JSON.parse(localStorage.getItem(this.STORAGE_KEYS.SABAK) || "[]");
+      const filtered = list.filter(s => s.sabak_date >= cutoffDate);
+      localStorage.setItem(this.STORAGE_KEYS.SABAK, JSON.stringify(filtered));
+    } catch (e) {}
+
+    // 2. Clean Supabase
+    const supabase = SupabaseClientModule.getClient();
+    if (supabase) {
+      try {
+        await supabase.from("sabak").delete().lt("sabak_date", cutoffDate);
+      } catch (e) {
+        console.warn("Sabak cleanup warning:", e);
+      }
+    }
   }
 };
 

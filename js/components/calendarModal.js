@@ -28,6 +28,9 @@ const CalendarModalComponent = {
     const modal = document.getElementById("calendar-modal");
     if (modal) {
       modal.classList.add("active");
+      if (window.App && typeof window.App.pushModalHistory === "function") {
+        window.App.pushModalHistory("calendar-modal");
+      }
     }
 
     const titleEl = document.getElementById("calendar-modal-student-name");
