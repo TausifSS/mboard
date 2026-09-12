@@ -1,0 +1,19 @@
+{
+  "name": "Maktab Register",
+  "short_name": "Maktab",
+  "description": "Simple, clean, mobile-first Maktab Management System for Quran and Islamic lessons.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#064e3b",
+  "theme_color": "#065f46",
+  "icons": [
+    {
+      "src": "assets/logo.jpg",
+      "sizes": "192x192 512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
+}

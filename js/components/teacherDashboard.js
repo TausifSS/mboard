@@ -1,10 +1,7 @@
 /**
  * MAKTAB MANAGEMENT SYSTEM - TEACHER DASHBOARD COMPONENT
  * Hidden teacher portal unlocked exclusively via secret code in search bar.
- * Provides:
- * 1. Today's Attendance marking
- * 2. Previous day's Sabak recording
- * 3. Student Management (Add, Edit, Delete)
+ * Upgraded with lush Islamic styling and initial avatars matching the reference design.
  */
 
 const TeacherDashboardComponent = {
@@ -28,6 +25,29 @@ const TeacherDashboardComponent = {
     });
   },
 
+  getAvatarStyle(name) {
+    const palettes = [
+      { bg: "#dcfce7", color: "#15803d" }, // Emerald
+      { bg: "#e0f2fe", color: "#0284c7" }, // Blue
+      { bg: "#fef3c7", color: "#b45309" }, // Amber
+      { bg: "#ede9fe", color: "#7c3aed" }, // Violet
+      { bg: "#ffe4e6", color: "#e11d48" }, // Rose
+      { bg: "#ccfbf1", color: "#0f766e" }  // Teal
+    ];
+    let hash = 0;
+    for (let i = 0; i < (name || "").length; i++) hash += name.charCodeAt(i);
+    return palettes[hash % palettes.length];
+  },
+
+  getInitials(name) {
+    if (!name) return "ST";
+    const parts = name.trim().split(" ");
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  },
+
   async render() {
     const container = document.getElementById("teacher-dashboard-content");
     if (!container) return;
@@ -42,7 +62,7 @@ const TeacherDashboardComponent = {
           </div>
           <div class="teacher-auth-title">Teacher Portal Protected</div>
           <p class="teacher-auth-desc">Type your private access code into the main search bar to access the Teacher Portal.</p>
-          <button class="btn-primary" style="margin-top: 14px;" onclick="App.showView('students')">
+          <button class="btn-primary" style="margin-top: 14px; width: 100%;" onclick="App.showView('students')">
             Back to Student List
           </button>
         </div>
@@ -101,7 +121,7 @@ const TeacherDashboardComponent = {
         <div>
           <h2 class="section-title" style="display:flex; align-items:center; gap:8px;">
             <span>Teacher Portal</span>
-            <span style="font-size:11px; padding:2px 8px; border-radius:999px; background:var(--color-primary-light); color:var(--color-primary); font-weight:600;">Active</span>
+            <span style="font-size:11px; padding:2px 8px; border-radius:999px; background:var(--color-primary-light); color:var(--color-primary); font-weight:700;">Active</span>
           </h2>
           <span style="font-size: 12px; color: var(--text-muted);">Manage Attendance, Sabak & Students</span>
         </div>
@@ -110,7 +130,7 @@ const TeacherDashboardComponent = {
         </button>
       </div>
 
-      <!-- Segmented Teacher Navigation Tabs -->
+      <!-- Segmented Tabs -->
       <div style="display:flex; background:var(--bg-input); padding:4px; border-radius:var(--radius-md); margin-bottom:16px; gap:4px;">
         <button class="btn-tab ${this.currentTeacherTab === 'attendance' ? 'active' : ''}" 
                 onclick="TeacherDashboardComponent.switchTab('attendance')">
@@ -126,7 +146,7 @@ const TeacherDashboardComponent = {
         </button>
       </div>
 
-      <!-- Tab Content Area -->
+      <!-- Tab Content -->
       <div id="teacher-tab-content">
         ${this.renderTabContent(todayDisplay, yesterdayDisplay)}
       </div>
@@ -143,9 +163,7 @@ const TeacherDashboardComponent = {
     }
   },
 
-  // --------------------------------------------------------------------------
-  // 1. ATTENDANCE TAB
-  // --------------------------------------------------------------------------
+  // 1. Attendance Tab
   renderAttendanceTab(todayDisplay) {
     return `
       <div class="today-banner">
@@ -164,11 +182,19 @@ const TeacherDashboardComponent = {
             const status = this.attendanceMap[s.id];
             const isPresent = status === "present";
             const isAbsent = status === "absent";
+            const initials = this.getInitials(s.name);
+            const style = this.getAvatarStyle(s.name);
+
             return `
               <div class="attendance-item">
-                <div class="att-student-meta">
-                  <div class="att-student-name">${this.escapeHtml(s.name)}</div>
-                  <div style="font-size:12px; color:var(--text-muted);">Father: ${this.escapeHtml(s.father_name)}</div>
+                <div class="att-student-meta" style="display:flex; align-items:center; gap:10px;">
+                  <div class="student-avatar" style="width:38px; height:38px; font-size:13px; border-radius:10px; background-color:${style.bg}; color:${style.color};">
+                    ${initials}
+                  </div>
+                  <div>
+                    <div class="att-student-name">${this.escapeHtml(s.name)}</div>
+                    <div style="font-size:12px; color:var(--text-muted);">Father: ${this.escapeHtml(s.father_name)}</div>
+                  </div>
                 </div>
                 <div class="att-toggle-group">
                   <button class="att-btn present ${isPresent ? 'active' : ''}" 
@@ -201,9 +227,7 @@ const TeacherDashboardComponent = {
     }
   },
 
-  // --------------------------------------------------------------------------
-  // 2. SABAK TAB
-  // --------------------------------------------------------------------------
+  // 2. Sabak Tab
   renderSabakTab(yesterdayDisplay) {
     return `
       <div class="today-banner" style="background:#fef3c7; border-color:#fde68a;">
@@ -218,14 +242,22 @@ const TeacherDashboardComponent = {
       ` : `
         <div class="attendance-list">
           ${this.students.map(s => {
-            const completed = this.sabakMap[s.id]; // true | false | undefined
+            const completed = this.sabakMap[s.id];
             const isYes = completed === true;
             const isNo = completed === false;
+            const initials = this.getInitials(s.name);
+            const style = this.getAvatarStyle(s.name);
+
             return `
               <div class="attendance-item">
-                <div class="att-student-meta">
-                  <div class="att-student-name">${this.escapeHtml(s.name)}</div>
-                  <div style="font-size:12px; color:var(--text-muted);">Father: ${this.escapeHtml(s.father_name)}</div>
+                <div class="att-student-meta" style="display:flex; align-items:center; gap:10px;">
+                  <div class="student-avatar" style="width:38px; height:38px; font-size:13px; border-radius:10px; background-color:${style.bg}; color:${style.color};">
+                    ${initials}
+                  </div>
+                  <div>
+                    <div class="att-student-name">${this.escapeHtml(s.name)}</div>
+                    <div style="font-size:12px; color:var(--text-muted);">Father: ${this.escapeHtml(s.father_name)}</div>
+                  </div>
                 </div>
                 <div class="att-toggle-group">
                   <button class="att-btn present ${isYes ? 'active' : ''}" 
@@ -260,13 +292,11 @@ const TeacherDashboardComponent = {
     }
   },
 
-  // --------------------------------------------------------------------------
-  // 3. STUDENTS TAB
-  // --------------------------------------------------------------------------
+  // 3. Students Tab
   renderStudentsTab() {
     return `
       <div class="teacher-actions-bar">
-        <button class="btn-primary" style="flex:1;" onclick="TeacherDashboardComponent.openAddModal()">
+        <button class="btn-primary" style="width:100%;" onclick="TeacherDashboardComponent.openAddModal()">
           <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
           </svg>
@@ -274,38 +304,45 @@ const TeacherDashboardComponent = {
         </button>
       </div>
 
-      <div class="student-list" style="margin-top: 12px;">
+      <div class="student-list" style="margin-top: 14px;">
         ${this.students.length === 0 ? `
           <div class="state-container">
             <p class="state-text">No students added yet.</p>
           </div>
-        ` : this.students.map(s => `
-          <div class="student-card" style="cursor:default;">
-            <div class="student-info" style="flex:1;" onclick="App.openStudentDashboard('${s.id}')">
-              <div class="student-name">${this.escapeHtml(s.name)}</div>
-              <div class="student-father">Father: ${this.escapeHtml(s.father_name)} · ${this.escapeHtml(s.mobile)}</div>
+        ` : this.students.map(s => {
+          const initials = this.getInitials(s.name);
+          const style = this.getAvatarStyle(s.name);
+          return `
+            <div class="student-card-lush" style="cursor:default;">
+              <div class="student-card-left" onclick="App.openStudentDashboard('${s.id}')" style="cursor:pointer;">
+                <div class="student-avatar" style="background-color: ${style.bg}; color: ${style.color};">
+                  ${initials}
+                </div>
+                <div class="student-info-col">
+                  <div class="student-name-lush">${this.escapeHtml(s.name)}</div>
+                  <div class="student-father-lush">Father: ${this.escapeHtml(s.father_name)} · ${this.escapeHtml(s.mobile)}</div>
+                </div>
+              </div>
+              <div style="display:flex; gap:6px;">
+                <button class="btn-secondary" style="height:34px; padding:0 10px;" title="Edit Student" onclick="TeacherDashboardComponent.openEditModal('${s.id}')">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                </button>
+                <button class="btn-danger-outline" style="height:34px; padding:0 10px;" title="Delete Student" onclick="TeacherDashboardComponent.openDeleteModal('${s.id}', '${this.escapeHtml(s.name)}')">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              </div>
             </div>
-            <div style="display:flex; gap:6px;">
-              <button class="btn-secondary" style="height:32px; padding:0 8px;" title="Edit Student" onclick="TeacherDashboardComponent.openEditModal('${s.id}')">
-                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                </svg>
-              </button>
-              <button class="btn-danger-outline" style="height:32px; padding:0 8px;" title="Delete Student" onclick="TeacherDashboardComponent.openDeleteModal('${s.id}', '${this.escapeHtml(s.name)}')">
-                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        `).join("")}
+          `;
+        }).join("")}
       </div>
     `;
   },
 
-  // --------------------------------------------------------------------------
-  // Modals: Add, Edit, Delete
-  // --------------------------------------------------------------------------
+  // Modals
   openAddModal() {
     const modal = document.getElementById("student-form-modal");
     const titleEl = document.getElementById("student-form-title");

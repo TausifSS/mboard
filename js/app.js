@@ -14,8 +14,10 @@ const App = {
     DB.initLocalStore();
     SupabaseClientModule.init();
 
-    // Bind Navigation & UI buttons
-    this.bindNavigation();
+    // Initialize PWA Installer & Service Worker
+    if (window.PWAInstaller) {
+      window.PWAInstaller.init();
+    }
 
     // Initialize sub-components
     await StudentListComponent.init();
