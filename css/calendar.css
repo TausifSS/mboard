@@ -1,0 +1,156 @@
+/* ==========================================================================
+   MAKTAB MANAGEMENT SYSTEM - CLEAN MONTHLY ATTENDANCE CALENDAR
+   Simple, Legible, Date-focused, Zero Unnecessary Decorative Dots
+   ========================================================================== */
+
+.calendar-modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Calendar Header & Month Navigation */
+.calendar-nav-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.calendar-month-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-primary-dark);
+}
+
+.month-nav-btn {
+  background: var(--bg-input);
+  border: none;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.month-nav-btn:hover {
+  background: #e2e8f0;
+}
+
+/* Days of Week Header */
+.calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  padding: 4px 0;
+}
+
+/* Calendar Days Grid */
+.calendar-days-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+
+.calendar-day-cell {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.calendar-day-cell.empty {
+  border: none;
+  background: transparent;
+  cursor: default;
+}
+
+.calendar-day-cell:hover:not(.empty) {
+  border-color: var(--color-primary);
+  background-color: var(--color-primary-light);
+}
+
+/* Status Styling (Clean Background Fill, No Decorative Dots) */
+.calendar-day-cell.present {
+  background-color: var(--color-present-bg);
+  border-color: var(--color-present-border);
+  color: var(--color-present);
+  font-weight: 700;
+}
+
+.calendar-day-cell.absent {
+  background-color: var(--color-absent-bg);
+  border-color: var(--color-absent-border);
+  color: var(--color-absent);
+  font-weight: 700;
+}
+
+.calendar-day-cell.selected {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+/* Selected Date Inspection Card */
+.calendar-inspection-card {
+  margin-top: 10px;
+  background: var(--bg-input);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.inspection-date {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.inspection-status-line {
+  font-size: 15px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-badge-inline {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+}
+
+.status-badge-inline.present {
+  background: var(--color-present-bg);
+  color: var(--color-present);
+}
+
+.status-badge-inline.absent {
+  background: var(--color-absent-bg);
+  color: var(--color-absent);
+}
+
+.status-badge-inline.unmarked {
+  background: #e2e8f0;
+  color: var(--text-muted);
+}
