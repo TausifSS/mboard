@@ -30,8 +30,10 @@ const StudentListComponent = {
 
         // Secret Teacher Access Trigger via Search Bar
         const trimmed = val.trim();
-        // Check if teacher code format or exact length
-        if (trimmed.length >= 6) {
+        // If matches 5digits-1digit pattern (e.g. XXXXX-X)
+        const isCodePattern = /^\d{5}-\d$/.test(trimmed);
+
+        if (isCodePattern) {
           const res = await AuthModule.verifyTeacherAccess(trimmed);
           if (res && res.success) {
             searchInput.value = "";
@@ -49,7 +51,7 @@ const StudentListComponent = {
       searchInput.addEventListener("keydown", async (e) => {
         if (e.key === "Enter") {
           const trimmed = searchInput.value.trim();
-          if (trimmed) {
+          if (trimmed.length >= 6) {
             const res = await AuthModule.verifyTeacherAccess(trimmed);
             if (res && res.success) {
               searchInput.value = "";

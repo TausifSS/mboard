@@ -122,51 +122,24 @@ const StudentDashboardComponent = {
         </button>
       </div>
 
-      <!-- Sabak Section -->
+      <!-- Sabak Section (100% Read-Only for Public Interface) -->
       <div class="dash-card">
         <div class="dash-card-title">Sabak</div>
         <div class="sabak-date-label">${yesterdayDisplay} — Sabak</div>
         
-        <div class="sabak-binary-group">
-          <button class="sabak-btn yes ${isSabakYes ? 'active' : ''}" 
-                  ${!isTeacher ? 'title="Teacher authentication required to record Sabak"' : ''}
-                  onclick="StudentDashboardComponent.toggleSabak(true)">
-            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
-            </svg>
-            Yes
-          </button>
-          <button class="sabak-btn no ${isSabakNo ? 'active' : ''}"
-                  ${!isTeacher ? 'title="Teacher authentication required to record Sabak"' : ''}
-                  onclick="StudentDashboardComponent.toggleSabak(false)">
-            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-            No
-          </button>
+        <div class="sabak-status-read-only">
+          ${hasSabak ? `
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span class="status-badge-inline ${isSabakYes ? 'present' : 'absent'}" style="font-size:14px; padding:6px 14px; font-weight:700;">
+                ${isSabakYes ? '✓ Completed (Yes)' : '✕ Incomplete (No)'}
+              </span>
+            </div>
+          ` : `
+            <p class="state-text" style="font-size:13px; text-align:left;">No Sabak record found for yesterday.</p>
+          `}
         </div>
-
-        ${!hasSabak ? '<p class="state-text" style="font-size:12px; margin-top:8px;">No Sabak record found for yesterday.</p>' : ''}
       </div>
     `;
-  },
-
-  async toggleSabak(status) {
-    if (!AuthModule.isTeacherAuthenticated()) {
-      App.showToast("Teacher access required to record Sabak", "error");
-      App.showView("teacher");
-      return;
-    }
-
-    try {
-      await DB.saveSabak(this.currentStudent.id, this.yesterdayDateStr, status);
-      this.sabakRecord = { completed: status };
-      this.render();
-      App.showToast("Sabak record saved.", "success");
-    } catch (err) {
-      console.error("Error saving Sabak:", err);
-      App.showToast("Sabak could not be saved.", "error");
-    }
   },
 
   escapeHtml(str) {

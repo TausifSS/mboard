@@ -96,7 +96,9 @@ const App = {
   },
 
   exitTeacherMode() {
+    AuthModule.logoutTeacher();
     this.showView("students");
+    this.showToast("Teacher session ended.", "info");
   },
 
   checkDateRollover() {
