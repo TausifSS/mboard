@@ -1,7 +1,6 @@
 /**
  * MAKTAB MANAGEMENT SYSTEM - TEACHER DASHBOARD COMPONENT
- * Hidden teacher portal unlocked exclusively via secret code in search bar.
- * Upgraded with lush Islamic styling and initial avatars matching the reference design.
+ * With Boys and Girls section filters across Attendance, Sabak, and Students tabs.
  */
 
 const TeacherDashboardComponent = {
@@ -9,6 +8,7 @@ const TeacherDashboardComponent = {
   attendanceMap: {},
   sabakMap: {},
   currentTeacherTab: "attendance", // 'attendance' | 'sabak' | 'students'
+  currentTeacherGenderFilter: "all", // 'all' | 'boy' | 'girl'
   todayDateStr: null,
   yesterdayDateStr: null,
 
@@ -25,18 +25,26 @@ const TeacherDashboardComponent = {
     });
   },
 
-  getAvatarStyle(name) {
-    const palettes = [
-      { bg: "#dcfce7", color: "#15803d" }, // Emerald
-      { bg: "#e0f2fe", color: "#0284c7" }, // Blue
-      { bg: "#fef3c7", color: "#b45309" }, // Amber
-      { bg: "#ede9fe", color: "#7c3aed" }, // Violet
-      { bg: "#ffe4e6", color: "#e11d48" }, // Rose
-      { bg: "#ccfbf1", color: "#0f766e" }  // Teal
-    ];
-    let hash = 0;
-    for (let i = 0; i < (name || "").length; i++) hash += name.charCodeAt(i);
-    return palettes[hash % palettes.length];
+  getAvatarStyle(name, gender) {
+    if (gender === "girl") {
+      const girlPalettes = [
+        { bg: "#fce7f3", color: "#be185d" },
+        { bg: "#ede9fe", color: "#7c3aed" },
+        { bg: "#ffe4e6", color: "#e11d48" }
+      ];
+      let hash = 0;
+      for (let i = 0; i < (name || "").length; i++) hash += name.charCodeAt(i);
+      return girlPalettes[hash % girlPalettes.length];
+    } else {
+      const boyPalettes = [
+        { bg: "#dcfce7", color: "#15803d" },
+        { bg: "#e0f2fe", color: "#0284c7" },
+        { bg: "#ccfbf1", color: "#0f766e" }
+      ];
+      let hash = 0;
+      for (let i = 0; i < (name || "").length; i++) hash += name.charCodeAt(i);
+      return boyPalettes[hash % boyPalettes.length];
+    }
   },
 
   getInitials(name) {
@@ -46,6 +54,11 @@ const TeacherDashboardComponent = {
       return (parts[0][0] + parts[1][0]).toUpperCase();
     }
     return name.substring(0, 2).toUpperCase();
+  },
+
+  setTeacherGenderFilter(gender) {
+    this.currentTeacherGenderFilter = gender;
+    this.renderPortal(document.getElementById("teacher-dashboard-content"));
   },
 
   async render() {
@@ -62,7 +75,7 @@ const TeacherDashboardComponent = {
           </div>
           <div class="teacher-auth-title">Teacher Portal Protected</div>
           <p class="teacher-auth-desc">Type your private access code into the main search bar to access the Teacher Portal.</p>
-          <button class="btn-primary" style="margin-top: 14px; width: 100%;" onclick="App.showView('students')">
+          <button class="btn-primary" style="margin-top: 14px; width:100%;" onclick="App.showView('students')">
             Back to Student List
           </button>
         </div>
@@ -111,12 +124,23 @@ const TeacherDashboardComponent = {
     }
   },
 
+  getFilteredStudents() {
+    if (this.currentTeacherGenderFilter === "all") {
+      return this.students;
+    }
+    return this.students.filter(s => s.gender === this.currentTeacherGenderFilter);
+  },
+
   renderPortal(container) {
     const todayDisplay = DateUtils.formatDisplayDate(this.todayDateStr);
     const yesterdayDisplay = DateUtils.formatDisplayDate(this.yesterdayDateStr);
 
+    const totalCount = this.students.length;
+    const boysCount = this.students.filter(s => s.gender === "boy").length;
+    const girlsCount = this.students.filter(s => s.gender === "girl").length;
+
     container.innerHTML = `
-      <!-- Teacher Top Header -->
+      <!-- Teacher Header -->
       <div class="teacher-panel-header">
         <div>
           <h2 class="section-title" style="display:flex; align-items:center; gap:8px;">
@@ -130,8 +154,8 @@ const TeacherDashboardComponent = {
         </button>
       </div>
 
-      <!-- Segmented Tabs -->
-      <div style="display:flex; background:var(--bg-input); padding:4px; border-radius:var(--radius-md); margin-bottom:16px; gap:4px;">
+      <!-- Segmented Main Tabs -->
+      <div style="display:flex; background:var(--bg-input); padding:4px; border-radius:var(--radius-md); margin-bottom:12px; gap:4px;">
         <button class="btn-tab ${this.currentTeacherTab === 'attendance' ? 'active' : ''}" 
                 onclick="TeacherDashboardComponent.switchTab('attendance')">
           Attendance
@@ -142,11 +166,27 @@ const TeacherDashboardComponent = {
         </button>
         <button class="btn-tab ${this.currentTeacherTab === 'students' ? 'active' : ''}" 
                 onclick="TeacherDashboardComponent.switchTab('students')">
-          Students (${this.students.length})
+          Students (${totalCount})
         </button>
       </div>
 
-      <!-- Tab Content -->
+      <!-- Boys / Girls Filter Bar inside Teacher Portal -->
+      <div class="gender-filter-bar" style="margin-bottom: 12px;">
+        <button class="filter-pill ${this.currentTeacherGenderFilter === 'all' ? 'active' : ''}" 
+                onclick="TeacherDashboardComponent.setTeacherGenderFilter('all')">
+          All (${totalCount})
+        </button>
+        <button class="filter-pill ${this.currentTeacherGenderFilter === 'boy' ? 'active' : ''}" 
+                onclick="TeacherDashboardComponent.setTeacherGenderFilter('boy')">
+          👦 Boys (${boysCount})
+        </button>
+        <button class="filter-pill ${this.currentTeacherGenderFilter === 'girl' ? 'active' : ''}" 
+                onclick="TeacherDashboardComponent.setTeacherGenderFilter('girl')">
+          👧 Girls (${girlsCount})
+        </button>
+      </div>
+
+      <!-- Active Tab Content -->
       <div id="teacher-tab-content">
         ${this.renderTabContent(todayDisplay, yesterdayDisplay)}
       </div>
@@ -154,36 +194,36 @@ const TeacherDashboardComponent = {
   },
 
   renderTabContent(todayDisplay, yesterdayDisplay) {
+    const list = this.getFilteredStudents();
     if (this.currentTeacherTab === "attendance") {
-      return this.renderAttendanceTab(todayDisplay);
+      return this.renderAttendanceTab(todayDisplay, list);
     } else if (this.currentTeacherTab === "sabak") {
-      return this.renderSabakTab(yesterdayDisplay);
+      return this.renderSabakTab(yesterdayDisplay, list);
     } else {
-      return this.renderStudentsTab();
+      return this.renderStudentsTab(list);
     }
   },
 
   // 1. Attendance Tab
-  renderAttendanceTab(todayDisplay) {
+  renderAttendanceTab(todayDisplay, list) {
     return `
       <div class="today-banner">
         <span class="today-banner-title">Today's Attendance</span>
         <span class="today-banner-date">${todayDisplay}</span>
       </div>
 
-      ${this.students.length === 0 ? `
+      ${list.length === 0 ? `
         <div class="state-container">
-          <p class="state-text">No students added yet.</p>
-          <button class="btn-primary" style="margin-top:12px; width:auto; padding:0 18px;" onclick="TeacherDashboardComponent.openAddModal()">+ Add Student</button>
+          <p class="state-text">No students in this section.</p>
         </div>
       ` : `
         <div class="attendance-list">
-          ${this.students.map(s => {
+          ${list.map(s => {
             const status = this.attendanceMap[s.id];
             const isPresent = status === "present";
             const isAbsent = status === "absent";
             const initials = this.getInitials(s.name);
-            const style = this.getAvatarStyle(s.name);
+            const style = this.getAvatarStyle(s.name, s.gender);
 
             return `
               <div class="attendance-item">
@@ -228,25 +268,25 @@ const TeacherDashboardComponent = {
   },
 
   // 2. Sabak Tab
-  renderSabakTab(yesterdayDisplay) {
+  renderSabakTab(yesterdayDisplay, list) {
     return `
       <div class="today-banner" style="background:#fef3c7; border-color:#fde68a;">
         <span class="today-banner-title" style="color:#92400e;">Yesterday's Sabak</span>
         <span class="today-banner-date" style="color:#b45309;">${yesterdayDisplay}</span>
       </div>
 
-      ${this.students.length === 0 ? `
+      ${list.length === 0 ? `
         <div class="state-container">
-          <p class="state-text">No students added yet.</p>
+          <p class="state-text">No students in this section.</p>
         </div>
       ` : `
         <div class="attendance-list">
-          ${this.students.map(s => {
+          ${list.map(s => {
             const completed = this.sabakMap[s.id];
             const isYes = completed === true;
             const isNo = completed === false;
             const initials = this.getInitials(s.name);
-            const style = this.getAvatarStyle(s.name);
+            const style = this.getAvatarStyle(s.name, s.gender);
 
             return `
               <div class="attendance-item">
@@ -293,7 +333,7 @@ const TeacherDashboardComponent = {
   },
 
   // 3. Students Tab
-  renderStudentsTab() {
+  renderStudentsTab(list) {
     return `
       <div class="teacher-actions-bar">
         <button class="btn-primary" style="width:100%;" onclick="TeacherDashboardComponent.openAddModal()">
@@ -305,13 +345,15 @@ const TeacherDashboardComponent = {
       </div>
 
       <div class="student-list" style="margin-top: 14px;">
-        ${this.students.length === 0 ? `
+        ${list.length === 0 ? `
           <div class="state-container">
-            <p class="state-text">No students added yet.</p>
+            <p class="state-text">No students in this section.</p>
           </div>
-        ` : this.students.map(s => {
+        ` : list.map(s => {
           const initials = this.getInitials(s.name);
-          const style = this.getAvatarStyle(s.name);
+          const style = this.getAvatarStyle(s.name, s.gender);
+          const sectionLabel = s.gender === "girl" ? "Girl" : "Boy";
+
           return `
             <div class="student-card-lush" style="cursor:default;">
               <div class="student-card-left" onclick="App.openStudentDashboard('${s.id}')" style="cursor:pointer;">
@@ -320,7 +362,7 @@ const TeacherDashboardComponent = {
                 </div>
                 <div class="student-info-col">
                   <div class="student-name-lush">${this.escapeHtml(s.name)}</div>
-                  <div class="student-father-lush">Father: ${this.escapeHtml(s.father_name)} · ${this.escapeHtml(s.mobile)}</div>
+                  <div class="student-father-lush">Father: ${this.escapeHtml(s.father_name)} · ${this.escapeHtml(s.mobile || 'No Mobile')} (${sectionLabel})</div>
                 </div>
               </div>
               <div style="display:flex; gap:6px;">
@@ -342,7 +384,7 @@ const TeacherDashboardComponent = {
     `;
   },
 
-  // Modals
+  // Modals: Add / Edit
   openAddModal() {
     const modal = document.getElementById("student-form-modal");
     const titleEl = document.getElementById("student-form-title");
@@ -350,12 +392,14 @@ const TeacherDashboardComponent = {
     const nameInput = document.getElementById("student-form-name");
     const fatherInput = document.getElementById("student-form-father");
     const mobileInput = document.getElementById("student-form-mobile");
+    const genderSelect = document.getElementById("student-form-gender");
 
     if (titleEl) titleEl.textContent = "Add Student";
     if (idInput) idInput.value = "";
     if (nameInput) nameInput.value = "";
     if (fatherInput) fatherInput.value = "";
     if (mobileInput) mobileInput.value = "";
+    if (genderSelect) genderSelect.value = this.currentTeacherGenderFilter === "girl" ? "girl" : "boy";
 
     if (modal) modal.classList.add("active");
   },
@@ -371,12 +415,14 @@ const TeacherDashboardComponent = {
     const nameInput = document.getElementById("student-form-name");
     const fatherInput = document.getElementById("student-form-father");
     const mobileInput = document.getElementById("student-form-mobile");
+    const genderSelect = document.getElementById("student-form-gender");
 
     if (titleEl) titleEl.textContent = "Edit Student";
     if (idInput) idInput.value = student.id;
     if (nameInput) nameInput.value = student.name;
     if (fatherInput) fatherInput.value = student.father_name;
-    if (mobileInput) mobileInput.value = student.mobile;
+    if (mobileInput) mobileInput.value = student.mobile || "";
+    if (genderSelect) genderSelect.value = student.gender || "boy";
 
     if (modal) modal.classList.add("active");
   },
@@ -392,13 +438,14 @@ const TeacherDashboardComponent = {
     const name = document.getElementById("student-form-name").value;
     const father_name = document.getElementById("student-form-father").value;
     const mobile = document.getElementById("student-form-mobile").value;
+    const gender = document.getElementById("student-form-gender") ? document.getElementById("student-form-gender").value : "boy";
 
     try {
       if (id) {
-        await DB.updateStudent(id, { name, father_name, mobile });
+        await DB.updateStudent(id, { name, father_name, mobile, gender });
         App.showToast("Student updated successfully.", "success");
       } else {
-        await DB.createStudent({ name, father_name, mobile });
+        await DB.createStudent({ name, father_name, mobile, gender });
         App.showToast("Student added successfully.", "success");
       }
       this.closeStudentModal();

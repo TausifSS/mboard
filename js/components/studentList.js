@@ -1,11 +1,13 @@
 /**
  * MAKTAB MANAGEMENT SYSTEM - STUDENT LIST COMPONENT
- * Clean, fast, case-insensitive search and modern card UI with avatar initials.
+ * Real Student Data (29 Boys + 25 Girls = 54 Students).
+ * Filter by Boys & Girls, Case-Insensitive Instant Search.
  */
 
 const StudentListComponent = {
   students: [],
   currentQuery: "",
+  currentGenderFilter: "all", // 'all' | 'boy' | 'girl'
   isLoading: false,
 
   async init() {
@@ -107,18 +109,33 @@ const StudentListComponent = {
     }
   },
 
-  getAvatarStyle(name) {
-    const palettes = [
-      { bg: "#dcfce7", color: "#15803d" }, // Emerald
-      { bg: "#e0f2fe", color: "#0284c7" }, // Blue
-      { bg: "#fef3c7", color: "#b45309" }, // Amber
-      { bg: "#ede9fe", color: "#7c3aed" }, // Violet
-      { bg: "#ffe4e6", color: "#e11d48" }, // Rose
-      { bg: "#ccfbf1", color: "#0f766e" }  // Teal
-    ];
-    let hash = 0;
-    for (let i = 0; i < (name || "").length; i++) hash += name.charCodeAt(i);
-    return palettes[hash % palettes.length];
+  setGenderFilter(gender) {
+    this.currentGenderFilter = gender;
+    this.filterAndRender();
+  },
+
+  getAvatarStyle(name, gender) {
+    if (gender === "girl") {
+      const girlPalettes = [
+        { bg: "#fce7f3", color: "#be185d" }, // Pink
+        { bg: "#ede9fe", color: "#7c3aed" }, // Violet
+        { bg: "#ffe4e6", color: "#e11d48" }, // Rose
+        { bg: "#fef3c7", color: "#b45309" }  // Warm Amber
+      ];
+      let hash = 0;
+      for (let i = 0; i < (name || "").length; i++) hash += name.charCodeAt(i);
+      return girlPalettes[hash % girlPalettes.length];
+    } else {
+      const boyPalettes = [
+        { bg: "#dcfce7", color: "#15803d" }, // Emerald
+        { bg: "#e0f2fe", color: "#0284c7" }, // Sky Blue
+        { bg: "#ccfbf1", color: "#0f766e" }, // Teal
+        { bg: "#e2e8f0", color: "#334155" }  // Slate
+      ];
+      let hash = 0;
+      for (let i = 0; i < (name || "").length; i++) hash += name.charCodeAt(i);
+      return boyPalettes[hash % boyPalettes.length];
+    }
   },
 
   getInitials(name) {
@@ -134,28 +151,43 @@ const StudentListComponent = {
     const listContainer = document.getElementById("student-list-container");
     if (!listContainer) return;
 
+    const totalCount = this.students.length;
+    const boysCount = this.students.filter(s => s.gender === "boy").length;
+    const girlsCount = this.students.filter(s => s.gender === "girl").length;
+
     const q = this.currentQuery.trim().toLowerCase();
     const filtered = this.students.filter(student => {
+      // Gender filter
+      if (this.currentGenderFilter !== "all" && student.gender !== this.currentGenderFilter) {
+        return false;
+      }
+      // Search filter
       if (!q) return true;
       const name = (student.name || "").toLowerCase();
       const father = (student.father_name || "").toLowerCase();
       return name.includes(q) || father.includes(q);
     });
 
-    if (this.students.length === 0) {
-      listContainer.innerHTML = `
-        <div class="state-container">
-          <svg class="state-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-          </svg>
-          <p class="state-text">No students added yet.</p>
-        </div>
-      `;
-      return;
-    }
+    // Gender Filter Bar HTML
+    const filterBarHtml = `
+      <div class="gender-filter-bar">
+        <button class="filter-pill ${this.currentGenderFilter === 'all' ? 'active' : ''}" 
+                onclick="StudentListComponent.setGenderFilter('all')">
+          All (${totalCount})
+        </button>
+        <button class="filter-pill ${this.currentGenderFilter === 'boy' ? 'active' : ''}" 
+                onclick="StudentListComponent.setGenderFilter('boy')">
+          👦 Boys (${boysCount})
+        </button>
+        <button class="filter-pill ${this.currentGenderFilter === 'girl' ? 'active' : ''}" 
+                onclick="StudentListComponent.setGenderFilter('girl')">
+          👧 Girls (${girlsCount})
+        </button>
+      </div>
+    `;
 
     if (filtered.length === 0) {
-      listContainer.innerHTML = `
+      listContainer.innerHTML = filterBarHtml + `
         <div class="state-container">
           <svg class="state-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -168,7 +200,8 @@ const StudentListComponent = {
 
     const cardsHtml = filtered.map(student => {
       const initials = this.getInitials(student.name);
-      const style = this.getAvatarStyle(student.name);
+      const style = this.getAvatarStyle(student.name, student.gender);
+      const sectionLabel = student.gender === "girl" ? "Girl" : "Boy";
 
       return `
         <div class="student-card-lush" onclick="App.openStudentDashboard('${student.id}')">
@@ -182,7 +215,7 @@ const StudentListComponent = {
             </div>
           </div>
           <div class="student-card-right">
-            <span class="badge-active-pill">Active</span>
+            <span class="badge-active-pill">${sectionLabel}</span>
             <span class="card-chevron">
               <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
@@ -200,7 +233,7 @@ const StudentListComponent = {
           <img src="assets/logo.jpg" alt="Maktab Logo" class="pwa-bottom-logo" />
           <div>
             <div class="pwa-bottom-title">Install Maktab App</div>
-            <div class="pwa-bottom-desc">Add to Home Screen for 1-tap access</div>
+            <div class="pwa-bottom-desc">Add to Home Screen for 1-tap fast access</div>
           </div>
         </div>
         <button class="btn-pwa-install" onclick="PWAInstaller.promptInstall()">
@@ -212,7 +245,7 @@ const StudentListComponent = {
       </div>
     `;
 
-    listContainer.innerHTML = cardsHtml + pwaBottomCardHtml;
+    listContainer.innerHTML = filterBarHtml + cardsHtml + pwaBottomCardHtml;
   },
 
   escapeHtml(str) {

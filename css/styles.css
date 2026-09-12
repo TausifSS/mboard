@@ -258,7 +258,43 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.gender-filter-bar {
+  display: flex;
+  gap: 8px;
   margin-bottom: 14px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.filter-pill {
+  height: 34px;
+  padding: 0 14px;
+  border-radius: var(--radius-full);
+  border: 1.5px solid var(--border-subtle);
+  background: #ffffff;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.filter-pill:hover {
+  border-color: #cbd5e1;
+}
+
+.filter-pill.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #ffffff;
+  box-shadow: 0 3px 8px rgba(6, 95, 70, 0.2);
 }
 
 .section-title {
