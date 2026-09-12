@@ -144,10 +144,10 @@ const TeacherDashboardComponent = {
       <div class="teacher-panel-header">
         <div>
           <h2 class="section-title" style="display:flex; align-items:center; gap:8px;">
-            <span>Teacher Portal</span>
-            <span style="font-size:11px; padding:2px 8px; border-radius:999px; background:var(--color-primary-light); color:var(--color-primary); font-weight:700;">Active</span>
+            <span>Maktab-E-Talimul Quran</span>
+            <span style="font-size:11px; padding:2px 8px; border-radius:999px; background:var(--color-primary-light); color:var(--color-primary); font-weight:700;">Teacher</span>
           </h2>
-          <span style="font-size: 12px; color: var(--text-muted);">Manage Attendance, Sabak & Students</span>
+          <span style="font-size: 12px; color: var(--text-muted);">Teacher Portal · Jama Masjid Shikrapur</span>
         </div>
         <button class="btn-secondary" style="height:34px; font-size:12px;" onclick="App.exitTeacherMode()">
           Exit Portal

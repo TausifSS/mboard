@@ -1,7 +1,7 @@
 {
-  "name": "Maktab Register",
+  "name": "Maktab-E-Talimul Quran (Jama Masjid Shikrapur)",
   "short_name": "Maktab",
-  "description": "Simple, clean, mobile-first Maktab Management System for Quran and Islamic lessons.",
+  "description": "Maktab-E-Talimul Quran (Jama Masjid Shikrapur) - Quran & Islamic Lessons Management.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
