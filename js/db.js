@@ -64,6 +64,14 @@ const REAL_STUDENTS_SEED = [
   { id: "girl-25", name: "Iqra Tamboli", father_name: "Salim Tamboli", mobile: "9579409191", gender: "girl" }
 ];
 
+const GIRL_NAME_SET = new Set([
+  "Sana Tamboli", "Aliya Tamboli", "Sabiya Shaikh", "Fatima Tamboli", "Aliza Tamboli",
+  "Fatima Shah", "Nida Shaikh", "Aliya Shaikh", "Khwaish Ali", "Namira Falak",
+  "Samiya Shaikh", "Alina Sayyad", "Sumayya Alamel", "Alfa", "Hina Ansari",
+  "Arfa Shaikh", "Mehak Hawaldar", "Naaz Sayyad", "Ilma Khan", "Ajia Khan",
+  "Fatima Pathan", "Mahira Shikh", "Ahana Sayyad", "Anam Shaikh", "Iqra Tamboli"
+]);
+
 const DB = {
   STORAGE_KEYS: {
     STUDENTS: "maktab_db_students_v3",
@@ -72,15 +80,12 @@ const DB = {
   },
 
   initLocalStore() {
-    // Populate real students if not already stored
     if (!localStorage.getItem(this.STORAGE_KEYS.STUDENTS)) {
       localStorage.setItem(this.STORAGE_KEYS.STUDENTS, JSON.stringify(REAL_STUDENTS_SEED));
     }
-    // Zero dummy attendance - completely clean
     if (!localStorage.getItem(this.STORAGE_KEYS.ATTENDANCE)) {
       localStorage.setItem(this.STORAGE_KEYS.ATTENDANCE, JSON.stringify([]));
     }
-    // Zero dummy sabak - completely clean
     if (!localStorage.getItem(this.STORAGE_KEYS.SABAK)) {
       localStorage.setItem(this.STORAGE_KEYS.SABAK, JSON.stringify([]));
     }
@@ -93,11 +98,7 @@ const DB = {
     const supabase = SupabaseClientModule.getClient();
     if (supabase) {
       try {
-        let query = supabase.from("students").select("id, name, father_name, mobile, gender").order("name");
-
-        if (genderFilter && genderFilter !== "all") {
-          query = query.eq("gender", genderFilter);
-        }
+        let query = supabase.from("students").select("id, name, father_name, mobile").order("name");
 
         if (searchQuery && searchQuery.trim()) {
           const q = searchQuery.trim();
@@ -106,10 +107,17 @@ const DB = {
 
         const { data, error } = await query;
         if (!error && data && data.length > 0) {
+          data.forEach(s => {
+            s.gender = GIRL_NAME_SET.has(s.name) ? "girl" : "boy";
+          });
+
+          if (genderFilter && genderFilter !== "all") {
+            return data.filter(s => s.gender === genderFilter);
+          }
           return data;
         }
       } catch (err) {
-        console.warn("Supabase students query fallback:", err);
+        console.warn("Supabase query error:", err);
       }
     }
 

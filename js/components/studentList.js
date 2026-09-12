@@ -1,7 +1,6 @@
 /**
  * MAKTAB MANAGEMENT SYSTEM - STUDENT LIST COMPONENT
- * Real Student Data (29 Boys + 25 Girls = 54 Students).
- * Filter by Boys & Girls, Case-Insensitive Instant Search.
+ * With distinct BOYS & GIRLS Sections, Section Banners, and Badges.
  */
 
 const StudentListComponent = {
@@ -147,28 +146,57 @@ const StudentListComponent = {
     return name.substring(0, 2).toUpperCase();
   },
 
+  renderStudentCard(student) {
+    const initials = this.getInitials(student.name);
+    const style = this.getAvatarStyle(student.name, student.gender);
+    const isGirl = student.gender === "girl";
+    const sectionClass = isGirl ? "girl" : "boy";
+    const sectionText = isGirl ? "👧 Girls Section" : "👦 Boys Section";
+
+    return `
+      <div class="student-card-lush" onclick="App.openStudentDashboard('${student.id}')">
+        <div class="student-card-left">
+          <div class="student-avatar" style="background-color: ${style.bg}; color: ${style.color};">
+            ${initials}
+          </div>
+          <div class="student-info-col">
+            <div class="student-name-lush">${this.escapeHtml(student.name)}</div>
+            <div class="student-father-lush">Father: ${this.escapeHtml(student.father_name)}</div>
+          </div>
+        </div>
+        <div class="student-card-right">
+          <span class="section-tag ${sectionClass}">${sectionText}</span>
+          <span class="card-chevron">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+          </span>
+        </div>
+      </div>
+    `;
+  },
+
   filterAndRender() {
     const listContainer = document.getElementById("student-list-container");
     if (!listContainer) return;
 
     const totalCount = this.students.length;
-    const boysCount = this.students.filter(s => s.gender === "boy").length;
-    const girlsCount = this.students.filter(s => s.gender === "girl").length;
+    const boys = this.students.filter(s => s.gender === "boy");
+    const girls = this.students.filter(s => s.gender === "girl");
 
     const q = this.currentQuery.trim().toLowerCase();
-    const filtered = this.students.filter(student => {
-      // Gender filter
-      if (this.currentGenderFilter !== "all" && student.gender !== this.currentGenderFilter) {
-        return false;
-      }
-      // Search filter
-      if (!q) return true;
-      const name = (student.name || "").toLowerCase();
-      const father = (student.father_name || "").toLowerCase();
-      return name.includes(q) || father.includes(q);
-    });
 
-    // Gender Filter Bar HTML
+    const matchesSearch = (s) => {
+      if (!q) return true;
+      const name = (s.name || "").toLowerCase();
+      const father = (s.father_name || "").toLowerCase();
+      return name.includes(q) || father.includes(q);
+    };
+
+    const filteredBoys = boys.filter(matchesSearch);
+    const filteredGirls = girls.filter(matchesSearch);
+
+    // Section Filter Bar HTML
     const filterBarHtml = `
       <div class="gender-filter-bar">
         <button class="filter-pill ${this.currentGenderFilter === 'all' ? 'active' : ''}" 
@@ -177,56 +205,61 @@ const StudentListComponent = {
         </button>
         <button class="filter-pill ${this.currentGenderFilter === 'boy' ? 'active' : ''}" 
                 onclick="StudentListComponent.setGenderFilter('boy')">
-          👦 Boys (${boysCount})
+          👦 Boys Section (${boys.length})
         </button>
         <button class="filter-pill ${this.currentGenderFilter === 'girl' ? 'active' : ''}" 
                 onclick="StudentListComponent.setGenderFilter('girl')">
-          👧 Girls (${girlsCount})
+          👧 Girls Section (${girls.length})
         </button>
       </div>
     `;
 
-    if (filtered.length === 0) {
-      listContainer.innerHTML = filterBarHtml + `
-        <div class="state-container">
-          <svg class="state-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-          <p class="state-text">No student found.</p>
+    let contentHtml = "";
+
+    if (this.currentGenderFilter === "boy") {
+      contentHtml += `
+        <div class="section-banner-lush boys">
+          <span>👦 Boys Student Register</span>
+          <span>${filteredBoys.length} Students</span>
+        </div>
+        <div class="student-list">
+          ${filteredBoys.length === 0 ? `<p class="state-text" style="padding:20px 0;">No boy student found.</p>` : filteredBoys.map(s => this.renderStudentCard(s)).join("")}
         </div>
       `;
-      return;
+    } else if (this.currentGenderFilter === "girl") {
+      contentHtml += `
+        <div class="section-banner-lush girls">
+          <span>👧 Girls Student Register</span>
+          <span>${filteredGirls.length} Students</span>
+        </div>
+        <div class="student-list">
+          ${filteredGirls.length === 0 ? `<p class="state-text" style="padding:20px 0;">No girl student found.</p>` : filteredGirls.map(s => this.renderStudentCard(s)).join("")}
+        </div>
+      `;
+    } else {
+      // Show BOTH sections clearly divided!
+      contentHtml += `
+        <!-- Boys Section -->
+        <div class="section-banner-lush boys">
+          <span>👦 Boys Student Register</span>
+          <span>${filteredBoys.length} Students</span>
+        </div>
+        <div class="student-list" style="margin-bottom:18px;">
+          ${filteredBoys.length === 0 ? `<p class="state-text" style="padding:10px 0;">No boy student found.</p>` : filteredBoys.map(s => this.renderStudentCard(s)).join("")}
+        </div>
+
+        <!-- Girls Section -->
+        <div class="section-banner-lush girls">
+          <span>👧 Girls Student Register</span>
+          <span>${filteredGirls.length} Students</span>
+        </div>
+        <div class="student-list">
+          ${filteredGirls.length === 0 ? `<p class="state-text" style="padding:10px 0;">No girl student found.</p>` : filteredGirls.map(s => this.renderStudentCard(s)).join("")}
+        </div>
+      `;
     }
 
-    const cardsHtml = filtered.map(student => {
-      const initials = this.getInitials(student.name);
-      const style = this.getAvatarStyle(student.name, student.gender);
-      const sectionLabel = student.gender === "girl" ? "Girl" : "Boy";
-
-      return `
-        <div class="student-card-lush" onclick="App.openStudentDashboard('${student.id}')">
-          <div class="student-card-left">
-            <div class="student-avatar" style="background-color: ${style.bg}; color: ${style.color};">
-              ${initials}
-            </div>
-            <div class="student-info-col">
-              <div class="student-name-lush">${this.escapeHtml(student.name)}</div>
-              <div class="student-father-lush">Father: ${this.escapeHtml(student.father_name)}</div>
-            </div>
-          </div>
-          <div class="student-card-right">
-            <span class="badge-active-pill">${sectionLabel}</span>
-            <span class="card-chevron">
-              <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-              </svg>
-            </span>
-          </div>
-        </div>
-      `;
-    }).join("");
-
-    // Permanent Small Section at the bottom of student list for PWA App Download
+    // Permanent PWA Download Card at Bottom
     const pwaBottomCardHtml = `
       <div class="pwa-bottom-card">
         <div class="pwa-bottom-left">
@@ -245,7 +278,7 @@ const StudentListComponent = {
       </div>
     `;
 
-    listContainer.innerHTML = filterBarHtml + cardsHtml + pwaBottomCardHtml;
+    listContainer.innerHTML = filterBarHtml + contentHtml + pwaBottomCardHtml;
   },
 
   escapeHtml(str) {

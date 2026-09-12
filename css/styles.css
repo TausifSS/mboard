@@ -317,6 +317,53 @@ body {
   box-shadow: 0 3px 8px rgba(6, 95, 70, 0.2);
 }
 
+.section-banner-lush {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  margin-top: 14px;
+  margin-bottom: 8px;
+  font-weight: 800;
+  font-size: 13.5px;
+}
+
+.section-banner-lush.boys {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #065f46;
+}
+
+.section-banner-lush.girls {
+  background: #fdf2f8;
+  border: 1px solid #fbcfe8;
+  color: #9d174d;
+}
+
+.section-tag {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.section-tag.boy {
+  background-color: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.section-tag.girl {
+  background-color: #fdf2f8;
+  color: #be185d;
+  border: 1px solid #fbcfe8;
+}
+
 .section-title {
   font-size: 18px;
   font-weight: 800;
